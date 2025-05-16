@@ -1,24 +1,23 @@
 from sklearn.cluster import KMeans
 import numpy as np
 import matplotlib.pyplot as plt
-from crime.lime_processing_functions import plot_lime_global
+from CRIME.crime.lime_processing_functions import plot_lime_global
 from sklearn.preprocessing import MinMaxScaler
 from matplotlib import colormaps
-from crime.CRIME_utils import cosine_similarity_manual
+from CRIME.crime.CRIME_utils import cosine_similarity_manual
 from matplotlib.patches import Rectangle
-import torch
 
-# crime Functions
+# CRIME Functions
 
 
 def CRIME_fit(number_of_clusters, latent_space, weight_data, mean_spectra_list, random_state = 42):
 
     """
-    Identifies crime clusters using K-means clustering on the LIME explanations.
+    Identifies CRIME clusters using K-means clustering on the LIME explanations.
 
     Parameters:
-    - number_of_clusters: identified number of contexts from visualising the crime space
-    - latent_space: produced latent space by crime autoencoder of choice
+    - number_of_clusters: identified number of contexts from visualising the CRIME space
+    - latent_space: produced latent space by CRIME autoencoder of choice
     - weight_data: LIME explanation weights
     - mean_spectra_list: List of mean spectra within each category
 
@@ -55,13 +54,13 @@ def CRIME_fit(number_of_clusters, latent_space, weight_data, mean_spectra_list, 
 def plot_CRIME(names, context_names, crime_labels, latent_space, category_indicator):
     
     """
-    Plots the crime contexts from the latent space as well as the categorical groupings.
+    Plots the CRIME contexts from the latent space as well as the categorical groupings.
 
     Parameters:
     - names: list of names of categories plotted
     - context_names: list of names of contexts
-    - crime_labels: list of labels for each crime spectra
-    - latent_space: crime latent space
+    - crime_labels: list of labels for each CRIME spectra
+    - latent_space: CRIME latent space
     - category_indicator: list of labels for ground truth categories
 
     Returns: Figure
@@ -76,7 +75,7 @@ def plot_CRIME(names, context_names, crime_labels, latent_space, category_indica
     ax1[0].scatter(latent_space[:, 0], latent_space[:, 1], c=crime_labels, cmap='viridis', edgecolors='grey')
 
     # Creating a custom legend for clusters
-    colors = plt.cm.viridis(np.linspace(0, 1, len(context_names)))  # get the colors of the current colormap
+    colors = plt.cm.viridis(np.linspace(0, 1, 6))  # get the colors of the current colormap
     for i, color in enumerate(colors):
         ax1[0].scatter([], [], color=color, label=f'Context {context_names[i]}')
 
@@ -104,7 +103,7 @@ def plot_CRIME(names, context_names, crime_labels, latent_space, category_indica
 def CRIME_clustering(separated_arrays, spectra_means, context_names, plot_clusters = False):
 
     """
-    This function both plots the separate crime contexts according to the mean spectra and weights of each.
+    This function both plots the separate CRIME contexts according to the mean spectra and weights of each.
     Separately it clusters the context spectra according to position, height, and LIME weight of each spectra.
     From this clustering, the top 5 clusters are selected to represent the key areas of each spectra corresponding to a compound.
 
@@ -118,7 +117,7 @@ def CRIME_clustering(separated_arrays, spectra_means, context_names, plot_cluste
     Returns: 
     - figs: list of figures produced for each context
     - second_figs: list of figures produced for each context following clustering
-    - top_cluster_indices_global: list of indices for cluster regions which should be highlighted in the crime matching step
+    - top_cluster_indices_global: list of indices for cluster regions which should be highlighted in the CRIME matching step
 
     """
     top_cluster_indices_global = []
@@ -144,7 +143,7 @@ def CRIME_clustering(separated_arrays, spectra_means, context_names, plot_cluste
         weights = np.array(weights).reshape(-1, 1)
         positions = np.array(positions).reshape(-1, 1)
 
-        figs.append(plot_lime_global(mean_of_positions,  mean_spectra, f'crime Context {context_names[i]}'))
+        figs.append(plot_lime_global(mean_of_positions,  mean_spectra, f'CRIME Context {context_names[i]}'))
 
     
 
@@ -211,20 +210,20 @@ def CRIME_clustering(separated_arrays, spectra_means, context_names, plot_cluste
             plt.show()
 
             # mean_of_positions is a 2D array (842x4) where each element is the mean of that position across all arrays
-            second_figs.append(plot_lime_global(mean_of_positions,  mean_spectra, f'crime Context {context_names[j]}', bottom_cluster_indices, True, True, True))
+            second_figs.append(plot_lime_global(mean_of_positions,  mean_spectra, f'CRIME Context {context_names[j]}', bottom_cluster_indices, True, True, True))
     return figs, second_figs, top_cluster_indices_global
 
-def run_CRIME(lime_data, encoder, cat_names, context_names, mean_spectra_list, category_indicator, plot_clusters = False, random_state = 42, lime_weights_only=False):
+def run_CRIME(lime_data, encoder, cat_names, context_names, mean_spectra_list, category_indicator, plot_clusters = False, random_state = 42):
     
     """
-    The main crime function which runs all other functions with the exception of the similarity match.
+    The main CRIME function which runs all other functions with the exception of the similarity match.
     Produces two latent space figures colored by both category and context, as well as plots for the mean explanation for all contexts
     as well as optionally the selected regions of each mean context explanation for further assessment.
     Output of the function can be used separately or for the similarity match function.
 
     Parameters:
     - lime_data: list of LIME explanations output from calculating all lime explanations
-    - encoder: trained crime autoencoder of choice
+    - encoder: trained CRIME autoencoder of choice
     - cat_names: list of names for each outcome category
     - context_names: list of names for each context
     - mean_spectra_list: list of mean spectra from each category
@@ -239,23 +238,17 @@ def run_CRIME(lime_data, encoder, cat_names, context_names, mean_spectra_list, c
     - crime_labels: list of context labels for each spectra in the original dataset
     - figs: list of figures produced for each context
     - second_figs: list of figures produced for each context following clustering
-    - top_cluster_indices_global: list of indices for cluster regions which should be highlighted in the crime matching step
+    - top_cluster_indices_global: list of indices for cluster regions which should be highlighted in the CRIME matching step
 
     """
     # Number of contexts is derived from length of naming array
     number_of_clusters = len(context_names)
     # We use only the last three columns for the VAE
-    if lime_weights_only:
-        latent_space_data = torch.tensor(lime_data)[:,:, 3:]
-    else:
-        latent_space_data = torch.tensor(lime_data)[:, :, 1:]
-    # print(latent_space_data[0])
-    weight_data = torch.tensor(lime_data)
+    latent_space_data = np.array(lime_data)[:,:, 1:]
+    weight_data = np.array(lime_data)
     
     # Predict latent space
-    mu, logvar = encoder.predict(latent_space_data.reshape(latent_space_data.shape[0], -1))
-    latent_space = torch.cat((mu, logvar), dim=1).detach().cpu().numpy()
-    print((latent_space[0][0]))
+    latent_space, _ = encoder.predict(latent_space_data)
     separated_arrays, separated_spectra, spectra_means, crime_labels = CRIME_fit(number_of_clusters, latent_space, weight_data, mean_spectra_list, random_state)
 
     plot_CRIME(cat_names, context_names, crime_labels, latent_space, category_indicator)
@@ -268,7 +261,7 @@ def run_CRIME(lime_data, encoder, cat_names, context_names, mean_spectra_list, c
 def similarity_match(target_spectra, target_titles, target_colors, separated_arrays, top_cluster_indices_global, spectra_means):
     
     """
-    Final crime function to match the identified crime contexts with target compound spectra.
+    Final CRIME function to match the identified CRIME contexts with target compound spectra.
     Matching is done using cosine similarity, and the function additionally plots sanity check visualisations
     of the weighted outcomes. The cosine similarity is applied to spectra weighted according to the mean context weights
     and an identical weighing is applied on the baseline target spectra as well to enhance similarities in key areas.
@@ -278,7 +271,7 @@ def similarity_match(target_spectra, target_titles, target_colors, separated_arr
 
     Parameters:
     - target_spectra: list of LIME explanations output from calculating all lime explanations
-    - target_titles: trained crime autoencoder of choice
+    - target_titles: trained CRIME autoencoder of choice
     - target_colors: list of names for each outcome category
     - separated_arrays: dict of LIME weight data for each spectra within set context
     - top_cluster_indices_global: list of indices for cluster regions which should be highlighted

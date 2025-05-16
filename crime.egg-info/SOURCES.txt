@@ -1,0 +1,12 @@
+LICENSE
+README.md
+setup.py
+crime/CRIME_functions.py
+crime/CRIME_utils.py
+crime/__init__.py
+crime/lime_processing_functions.py
+crime.egg-info/PKG-INFO
+crime.egg-info/SOURCES.txt
+crime.egg-info/dependency_links.txt
+crime.egg-info/requires.txt
+crime.egg-info/top_level.txt

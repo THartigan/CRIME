@@ -1,0 +1,5 @@
+from .lime_processing_functions import plot_lime_global
+from .lime_processing_functions import spectra_explainer
+from .lime_processing_functions import calculate_lime
+from .CRIME_functions import run_CRIME
+from .CRIME_functions import similarity_match
