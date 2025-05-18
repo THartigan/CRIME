@@ -162,7 +162,7 @@ def sort_lime(lime_weights, mean_spectra, x_axis_values, scale_factor =1):
 #   return category_arrays
 
 
-def plot_lime_global(plot_data, mean_spectra, title, cluster_indices = None, plot_mean_spectra = True, plot_shade = True, plot_clusters = False, figsize=(19, 5)):
+def plot_lime_global(plot_data, mean_spectra, title, cluster_indices = None, plot_mean_spectra = True, plot_shade = True, plot_clusters = False, figsize=(19, 5), lime_scale_factor = 10):
 
     """
     LIME explanation plotting function.
@@ -187,6 +187,9 @@ def plot_lime_global(plot_data, mean_spectra, title, cluster_indices = None, plo
 
 
     fig = plt.figure(figsize=figsize)
+
+    # Scale up LIME data for better visibility
+    plot_data[:,3] = plot_data[:,3] * lime_scale_factor
     
     if plot_mean_spectra:
       # Start plotting the mean spectra, using default black color initially
@@ -217,16 +220,16 @@ def plot_lime_global(plot_data, mean_spectra, title, cluster_indices = None, plo
         negatives = plot_data[:,3] < 0
 
         # Filling positive and negative values with different colors
-        plt.fill_between(plot_data[:, 0], 0, plot_data[:,3], where=positives, color='darkgreen', alpha=0.9, label='Positive')
-        plt.fill_between(plot_data[:, 0], 0, np.abs(plot_data[:,3]), where=negatives, color='orange', alpha=0.9, label='Negative')
+        plt.fill_between(plot_data[:, 0], 0, plot_data[:,3], where=positives, color='darkgreen', alpha=0.9, label=f'{lime_scale_factor}x Positive')
+        plt.fill_between(plot_data[:, 0], 0, np.abs(plot_data[:,3]), where=negatives, color='orange', alpha=0.9, label=f'{lime_scale_factor}x Negative')
     else:
         # Separating positive and negative values for plot_data[:,3]
         positives = plot_data[:,3] >= 0
         negatives = plot_data[:,3] < 0
 
         # Filling positive and negative values with different colors
-        plt.fill_between(plot_data[:, 0], 0, plot_data[:,3], where=positives, color='darkgreen', alpha=0.9, label='Positive')
-        plt.fill_between(plot_data[:, 0], 0, np.abs(plot_data[:,3]), where=negatives, color='orange', alpha=0.9, label='Negative')
+        plt.fill_between(plot_data[:, 0], 0, plot_data[:,3], where=positives, color='darkgreen', alpha=0.9, label=f'{lime_scale_factor}x Positive')
+        plt.fill_between(plot_data[:, 0], 0, np.abs(plot_data[:,3]), where=negatives, color='orange', alpha=0.9, label=f'{lime_scale_factor}x Negative')
 
     if(plot_clusters):
         # Define colors for top clusters - adjust colors as needed

@@ -7,6 +7,7 @@ from matplotlib import colormaps
 from crime.CRIME_utils import cosine_similarity_manual
 from matplotlib.patches import Rectangle
 import torch
+import umap
 
 # crime Functions
 
@@ -68,11 +69,13 @@ def plot_CRIME(names, context_names, crime_labels, latent_space, category_indica
 
     """
 
-
+    reducer = umap.UMAP()
+    embedding = reducer.fit_transform(latent_space)
     # Set default font size
     # rcParams['font.size'] = 14
     fig1, ax1 = plt.subplots(figsize=(15, 6), nrows = 1, ncols = 2)
     # Scatter plot of the clusters
+    print(np.shape(latent_space))
     ax1[0].scatter(latent_space[:, 0], latent_space[:, 1], c=crime_labels, cmap='viridis', edgecolors='grey')
 
     # Creating a custom legend for clusters
@@ -144,7 +147,7 @@ def CRIME_clustering(separated_arrays, spectra_means, context_names, plot_cluste
         weights = np.array(weights).reshape(-1, 1)
         positions = np.array(positions).reshape(-1, 1)
 
-        figs.append(plot_lime_global(mean_of_positions,  mean_spectra, f'crime Context {context_names[i]}'))
+        figs.append(plot_lime_global(mean_of_positions,  mean_spectra, f'CRIME Context {context_names[i]}'))
 
     
 
@@ -161,6 +164,10 @@ def CRIME_clustering(separated_arrays, spectra_means, context_names, plot_cluste
         
         # Combine x, y, z into a single 2D array
         X = np.column_stack((position_scaled, weights_scaled, spectra_scaled))  # Transpose to make sure each row is (x, y, z)
+        print(spectra)
+        print(weights)
+        print(positions)
+        print(X)
         
         n_clusters=15
         # Perform KMeans clustering
@@ -211,7 +218,7 @@ def CRIME_clustering(separated_arrays, spectra_means, context_names, plot_cluste
             plt.show()
 
             # mean_of_positions is a 2D array (842x4) where each element is the mean of that position across all arrays
-            second_figs.append(plot_lime_global(mean_of_positions,  mean_spectra, f'crime Context {context_names[j]}', bottom_cluster_indices, True, True, True))
+            second_figs.append(plot_lime_global(mean_of_positions,  mean_spectra, f'crime Context {context_names[j]}', top_cluster_indices, True, True, True, lime_scale_factor=1))
     return figs, second_figs, top_cluster_indices_global
 
 def run_CRIME(lime_data, encoder, cat_names, context_names, mean_spectra_list, category_indicator, plot_clusters = False, random_state = 42, lime_weights_only=False):
