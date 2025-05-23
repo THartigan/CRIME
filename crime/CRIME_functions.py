@@ -73,10 +73,11 @@ def plot_CRIME(names, context_names, crime_labels, latent_space, category_indica
     embedding = reducer.fit_transform(latent_space)
     # Set default font size
     # rcParams['font.size'] = 14
-    fig1, ax1 = plt.subplots(figsize=(15, 6), nrows = 1, ncols = 2)
+    fig1, ax1 = plt.subplots(figsize=(18, 6), nrows = 1, ncols = 2)
+    fig1.subplots_adjust(right=0.8, wspace=0.35)
     # Scatter plot of the clusters
-    print(np.shape(latent_space))
-    ax1[0].scatter(latent_space[:, 0], latent_space[:, 1], c=crime_labels, cmap='viridis', edgecolors='grey')
+    # print(np.shape(embedding))
+    ax1[0].scatter(embedding[:, 0], embedding[:, 1], c=crime_labels, cmap='viridis', edgecolors='grey')
 
     # Creating a custom legend for clusters
     colors = plt.cm.viridis(np.linspace(0, 1, len(context_names)))  # get the colors of the current colormap
@@ -84,10 +85,11 @@ def plot_CRIME(names, context_names, crime_labels, latent_space, category_indica
         ax1[0].scatter([], [], color=color, label=f'Context {context_names[i]}')
 
     # plt.colorbar()
-    ax1[0].set_xlabel('Latent Dimension 1', color='black')
-    ax1[0].set_ylabel('Latent Dimension 2', color='black')
-    ax1[0].set_title('Latent Space Representation Colored by Context', color='black')
-    ax1[0].legend(loc = 'lower left', markerscale = 2)
+    ax1[0].set_xlabel('UMAP Dimension 1', color='black')
+    ax1[0].set_ylabel('UMAP Dimension 2', color='black')
+    ax1[0].set_title('UMAP Latent Space Representation Colored by Context', color='black')
+    # ax1[0].legend(loc = 'right', markerscale = 2)
+    ax1[0].legend(loc='upper left', bbox_to_anchor=(1.02, 1), borderaxespad=0., markerscale=2)
 
     # Unique categories and colors
     unique_categories = np.unique(category_indicator)
@@ -95,14 +97,15 @@ def plot_CRIME(names, context_names, crime_labels, latent_space, category_indica
 
     for i, cat in enumerate(unique_categories):
         inds = [j for j, x in enumerate(category_indicator) if x == cat]
-        ax1[1].scatter(latent_space[inds, 0], latent_space[inds, 1], color=colors[i], label=f'{names[i]}', alpha=0.5)
+        ax1[1].scatter(embedding[inds, 0], embedding[inds, 1], color=colors[i], label=f'{names[i]}', alpha=0.5)
 
     # plt.colorbar()
-    ax1[1].set_xlabel('Latent Dimension 1', color='black')
+    ax1[1].set_xlabel('UMAP Dimension 1', color='black')
     # ax1[1].set_ylabel('Latent Dimension 2')
-    ax1[1].set_title('Latent Space Representation Colored by Category', color='black')
-    ax1[1].legend(loc = 'lower left', markerscale = 2)
+    ax1[1].set_title('UMAP Latent Space Representation Colored by Category', color='black')
+    ax1[1].legend(loc='upper left', bbox_to_anchor=(1.02, 1), borderaxespad=0., markerscale=2)
     plt.show()
+    return fig1
 
 def CRIME_clustering(separated_arrays, spectra_means, context_names, plot_clusters = False):
 
@@ -164,10 +167,10 @@ def CRIME_clustering(separated_arrays, spectra_means, context_names, plot_cluste
         
         # Combine x, y, z into a single 2D array
         X = np.column_stack((position_scaled, weights_scaled, spectra_scaled))  # Transpose to make sure each row is (x, y, z)
-        print(spectra)
-        print(weights)
-        print(positions)
-        print(X)
+        # print(spectra)
+        # print(weights)
+        # print(positions)
+        # print(X)
         
         n_clusters=15
         # Perform KMeans clustering
@@ -262,17 +265,17 @@ def run_CRIME(lime_data, encoder, cat_names, context_names, mean_spectra_list, c
     # Predict latent space
     mu, logvar = encoder.predict(latent_space_data.reshape(latent_space_data.shape[0], -1))
     latent_space = torch.cat((mu, logvar), dim=1).detach().cpu().numpy()
-    print((latent_space[0][0]))
+    # print((latent_space[0][0]))
     separated_arrays, separated_spectra, spectra_means, crime_labels = CRIME_fit(number_of_clusters, latent_space, weight_data, mean_spectra_list, random_state)
 
-    plot_CRIME(cat_names, context_names, crime_labels, latent_space, category_indicator)
+    crime_figs = plot_CRIME(cat_names, context_names, crime_labels, latent_space, category_indicator)
     
     figs, second_figs, top_cluster_indices_global = CRIME_clustering(separated_arrays, spectra_means, context_names, plot_clusters)
 
-    return separated_arrays, separated_spectra, spectra_means, crime_labels, figs, second_figs, top_cluster_indices_global
+    return separated_arrays, separated_spectra, spectra_means, crime_labels, figs, second_figs, top_cluster_indices_global, crime_figs
     
 
-def similarity_match(target_spectra, target_titles, target_colors, separated_arrays, top_cluster_indices_global, spectra_means):
+def similarity_match(target_spectra, target_titles, target_colors, separated_arrays, top_cluster_indices_global, spectra_means, show_plots=False):
     
     """
     Final crime function to match the identified crime contexts with target compound spectra.
@@ -316,20 +319,25 @@ def similarity_match(target_spectra, target_titles, target_colors, separated_arr
         final_indices.append(all_indices)
 
 
+    print("A")
     max_similarity_target = []
     combined_similarities = []
 
     for j in range(len(separated_arrays)):
         # Step 1: Stack the arrays along a new axis, creating a 3D array
         stacked_arrays = np.stack(separated_arrays[j])
+        # Gives an array of shape (number of spectra in a context, 801, 4)
 
         # Step 2: Compute the mean along the new axis (axis=0), which will reduce the 3D array back to a 2D array
         mean_of_positions = np.mean(stacked_arrays, axis=0)
-        mean_spectra = spectra_means[j]
+        # This gives the average values for the lime weights of the spectra within each context
+        # print(np.shape(mean_of_positions))
+        mean_spectra = spectra_means[j] # The mean spectra associated with the context
 
         weights = mean_of_positions[:,3]
 
         weights = np.array(weights).reshape(-1, 1)
+        # print(np.shape(weights)) 
 
         # Initialize scaler with the desired range
         scaler = MinMaxScaler(feature_range=(-1, 1))
@@ -350,54 +358,67 @@ def similarity_match(target_spectra, target_titles, target_colors, separated_arr
         # x_axis_cut = np.delete(x_axis_values, indices_to_remove)
         spectra_scaled = np.delete(spectra_scaled, indices_to_remove).reshape(-1, 1)
         spectra_unweighed = np.delete(spectra_unweighed, indices_to_remove).reshape(-1, 1)
+        # Cut weights to match removed indices for target weighting
+        weights_scaled = np.delete(weights_scaled, indices_to_remove, axis=0).reshape(-1, 1)
 
-        fig, ax = plt.subplots(figsize=(6, 2*len(target_spectra)), nrows=3, ncols=1)
-        combined_cut_target = []
-        for k in range(len(target_spectra)):
-            temp_target_spectra = scaler.fit_transform(target_spectra[k].reshape(-1, 1))
-            temp_target_spectra = np.delete(temp_target_spectra, indices_to_remove).reshape(-1, 1)
-            combined_cut_target.append(temp_target_spectra)
+        if show_plots:
+            fig, ax = plt.subplots(figsize=(6, 2*len(target_spectra)), nrows=len(target_spectra), ncols=1)
+        # Vectorized scaling and removal of unwanted indices for all target spectra at once
+        # Stack into shape (n_targets, spectrum_length)
+        targets_arr = np.stack([ts.reshape(-1) for ts in target_spectra])
+        # Transpose to (spectrum_length, n_targets) so each column is a spectrum
+        targets_arr_T = targets_arr.T
+        # Scale each column (spectrum) between -1 and 1 in one go
+        scaled_targets = MinMaxScaler(feature_range=(-1, 1)).fit_transform(targets_arr_T)
+        # Remove rows corresponding to indices_to_remove
+        cut_scaled_targets = np.delete(scaled_targets, indices_to_remove, axis=0)
+        # Split back into list of (length, 1) arrays
+        combined_cut_target = [
+            cut_scaled_targets[:, i].reshape(-1, 1)
+            for i in range(cut_scaled_targets.shape[1])
+        ]
             
-        similarities = []
-
-        for i in range(len(target_spectra)):
-            target_spectra_scaled = scaler.fit_transform(target_spectra[i].reshape(-1, 1))*weights_scaled
-
-            target_spectra_scaled = np.delete(target_spectra_scaled, indices_to_remove).reshape(-1, 1)
-
-            # Calculate cosine similarity
-            similarity = cosine_similarity_manual(spectra_scaled.flatten(), target_spectra_scaled.flatten())
-
-            ax[i].plot(spectra_scaled, color = 'black')
-            ax[i].plot(target_spectra_scaled, color = target_colors[i])
-
-            ax[i].set_ylim(-1, 1)
-            ax[i].set_xlabel(f'{target_titles[i]}: {similarity: .3f}')
-            ax[i].set_xticks([])  # Remove x-axis tick marks and labels
-            ax[i].set_yticks([])  # Remove y-axis tick marks and labels
-
-            for spine in ax[i].spines.values():
-                spine.set_visible(False)
-            
-            similarities.append(similarity)
-
+        print(j)
+        # Vectorized similarity computation
+        # Use the precomputed cut_scaled_targets (shape: n_pts × n_targets)
+        Y = cut_scaled_targets * weights_scaled  # broadcasts weights over columns
+        x = spectra_scaled.flatten()
+        # Compute dot products and norms
+        dot_prods = x @ Y
+        norm_x = np.linalg.norm(x)
+        norms_y = np.linalg.norm(Y, axis=0)
+        # Cosine similarities for all targets at once
+        similarities = (dot_prods / (norm_x * norms_y)).tolist()
         combined_similarities.append(similarities)
-        max_similarity_target.append(similarities.index(max(similarities)))
+        max_similarity_target.append(int(np.argmax(similarities)))
+
+        # Plotting if requested
+        if show_plots:
+            for i, sim in enumerate(similarities):
+                ax[i].plot(x, color='black')
+                ax[i].plot(Y[:, i])
+                ax[i].set_ylim(-1, 1)
+                ax[i].set_xlabel(f'{target_titles[i]}: {sim: .3f}')
+                ax[i].set_xticks([])
+                ax[i].set_yticks([])
+                for spine in ax[i].spines.values():
+                    spine.set_visible(False)
         
+        if show_plots:
         # Collect all handles and labels
-        handles, labels = [], []
-        for axis in ax.flat:
-            for handle, label in zip(*axis.get_legend_handles_labels()):
-                handles.append(handle)
-                labels.append(label)
+            handles, labels = [], []
+            for axis in ax.flat:
+                for handle, label in zip(*axis.get_legend_handles_labels()):
+                    handles.append(handle)
+                    labels.append(label)
 
-        # Create a single legend for the whole figure with all handles and labels
-        fig.legend(handles, labels, loc='lower center', ncol=3, frameon=False)
-        ax[1].set_ylabel('Cluster region LIME weighted spectra')
-        ax[0].set_title(f'Cosine Similarity for Cluster {j+1}', weight = 'bold')
+            # Create a single legend for the whole figure with all handles and labels
+            fig.legend(handles, labels, loc='lower center', ncol=3, frameon=False)
+            ax[1].set_ylabel('Cluster region LIME weighted spectra')
+            ax[0].set_title(f'Cosine Similarity for Cluster {j+1}', weight = 'bold')
 
-        rect = Rectangle((0, 0), 1, 1, fill=False, color="white", linewidth=2, transform=fig.transFigure, clip_on=False)
-        fig.patches.append(rect)
+            rect = Rectangle((0, 0), 1, 1, fill=False, color="white", linewidth=2, transform=fig.transFigure, clip_on=False)
+            fig.patches.append(rect)
 
-        plt.show()
+            plt.show()
     return max_similarity_target, combined_similarities

@@ -195,7 +195,7 @@ def plot_lime_global(plot_data, mean_spectra, title, cluster_indices = None, plo
       # Start plotting the mean spectra, using default black color initially
       last_index = 0
       current_color = 'black'
-      plt.plot(plot_data[:, 0], mean_spectra, c = current_color)
+      plt.plot(plot_data[:, 0], mean_spectra, c = current_color, label = "Mean Context Spectrum")
       for i in range(1, len(plot_data[:, 0])):
           # Check if current point matches the mean spectra
           if (plot_data[i, 1] == mean_spectra[i]) or (plot_data[i, 2] == mean_spectra[i]):
@@ -220,16 +220,16 @@ def plot_lime_global(plot_data, mean_spectra, title, cluster_indices = None, plo
         negatives = plot_data[:,3] < 0
 
         # Filling positive and negative values with different colors
-        plt.fill_between(plot_data[:, 0], 0, plot_data[:,3], where=positives, color='darkgreen', alpha=0.9, label=f'{lime_scale_factor}x Positive')
-        plt.fill_between(plot_data[:, 0], 0, np.abs(plot_data[:,3]), where=negatives, color='orange', alpha=0.9, label=f'{lime_scale_factor}x Negative')
+        plt.fill_between(plot_data[:, 0], 0, plot_data[:,3], where=positives, color='darkgreen', alpha=0.9, label=f'{lime_scale_factor}x Positive LIME Weights')
+        plt.fill_between(plot_data[:, 0], 0, np.abs(plot_data[:,3]), where=negatives, color='orange', alpha=0.9, label=f'{lime_scale_factor}x Negative LIME Weights')
     else:
         # Separating positive and negative values for plot_data[:,3]
         positives = plot_data[:,3] >= 0
         negatives = plot_data[:,3] < 0
 
         # Filling positive and negative values with different colors
-        plt.fill_between(plot_data[:, 0], 0, plot_data[:,3], where=positives, color='darkgreen', alpha=0.9, label=f'{lime_scale_factor}x Positive')
-        plt.fill_between(plot_data[:, 0], 0, np.abs(plot_data[:,3]), where=negatives, color='orange', alpha=0.9, label=f'{lime_scale_factor}x Negative')
+        plt.fill_between(plot_data[:, 0], 0, plot_data[:,3], where=positives, color='darkgreen', alpha=0.9, label=f'{lime_scale_factor} x Positive LIME Weights')
+        plt.fill_between(plot_data[:, 0], 0, np.abs(plot_data[:,3]), where=negatives, color='orange', alpha=0.9, label=f'{lime_scale_factor} x Negative LIME Weights')
 
     if(plot_clusters):
         # Define colors for top clusters - adjust colors as needed
@@ -242,13 +242,22 @@ def plot_lime_global(plot_data, mean_spectra, title, cluster_indices = None, plo
 
 
     # plt.ylim(0, 1)
-    plt.legend(fontsize = 'large', markerscale = 2)
-    plt.title(title, color='black')
-    plt.xlabel('Wavenumber (cm$^{-1}$)')
-    plt.ylabel('Relative Intensity')
+    marker_size = 17
+    label_size = 19
+    plt.xticks(fontsize=marker_size)
+    plt.yticks(fontsize=marker_size)
+    plt.tick_params(axis='x', direction='in', width=4, labelsize=marker_size, colors='black')
+    plt.tick_params(axis='y', direction='in', width=4, labelsize=marker_size, colors='black')
+    plt.grid(False)
+    plt.grid(visible=True, color='gray', linestyle='--', linewidth=0.5)
+    # plt.legend(markerscale = 3, fontsize=label_size)
+    plt.title(title, color='black', fontsize=label_size)
+    plt.xlabel('Wavenumber (cm$^{-1}$)', fontsize=label_size)
+    plt.ylabel('Relative Intensity', fontsize=label_size)
     # axs.tick_params(axis='x', direction='in', width=4, labelsize=16, colors='black')
     # axs.tick_params(axis='y', direction='in', width=4, labelsize=16, colors='black')
-    plt.show()
+    plt.tight_layout()
+    # plt.show()
     # fig.savefig(f'crime{title}.pdf', dpi = 600)
     return(fig)
 
