@@ -8,6 +8,7 @@ from crime.CRIME_utils import cosine_similarity_manual
 from matplotlib.patches import Rectangle
 import torch
 import umap
+from torch.utils.data import DataLoader, TensorDataset
 
 # crime Functions
 
@@ -87,7 +88,7 @@ def plot_CRIME(names, context_names, crime_labels, latent_space, category_indica
     # plt.colorbar()
     ax1[0].set_xlabel('UMAP Dimension 1', color='black')
     ax1[0].set_ylabel('UMAP Dimension 2', color='black')
-    ax1[0].set_title('UMAP Latent Space Representation Colored by Context', color='black')
+    # ax1[0].set_title('UMAP Latent Space Representation Colored by Context', color='black')
     # ax1[0].legend(loc = 'right', markerscale = 2)
     ax1[0].legend(loc='upper left', bbox_to_anchor=(1.02, 1), borderaxespad=0., markerscale=2)
 
@@ -97,12 +98,16 @@ def plot_CRIME(names, context_names, crime_labels, latent_space, category_indica
 
     for i, cat in enumerate(unique_categories):
         inds = [j for j, x in enumerate(category_indicator) if x == cat]
-        ax1[1].scatter(embedding[inds, 0], embedding[inds, 1], color=colors[i], label=f'{names[i]}', alpha=0.5)
+        ax1[1].scatter(embedding[inds, 0], embedding[inds, 1], color=colors[i], label=f'{names[i]}', alpha=0.8)
 
     # plt.colorbar()
     ax1[1].set_xlabel('UMAP Dimension 1', color='black')
+    ax1[0].set_xlim(-5,15.5)
+    ax1[1].set_xlim(-5,15.5)
+    ax1[1].set_ylim(-3,14)
+    ax1[0].set_ylim(-3,14)
     # ax1[1].set_ylabel('Latent Dimension 2')
-    ax1[1].set_title('UMAP Latent Space Representation Colored by Category', color='black')
+    # ax1[1].set_title('UMAP Latent Space Representation Colored by Category', color='black')
     ax1[1].legend(loc='upper left', bbox_to_anchor=(1.02, 1), borderaxespad=0., markerscale=2)
     plt.show()
     return fig1
@@ -150,7 +155,7 @@ def CRIME_clustering(separated_arrays, spectra_means, context_names, plot_cluste
         weights = np.array(weights).reshape(-1, 1)
         positions = np.array(positions).reshape(-1, 1)
 
-        figs.append(plot_lime_global(mean_of_positions,  mean_spectra, f'CRIME Context {context_names[i]}'))
+        figs.append(plot_lime_global(mean_of_positions,  mean_spectra, f'CRIME Context {context_names[i]}', lime_scale_factor=20))
 
     
 
@@ -256,15 +261,41 @@ def run_CRIME(lime_data, encoder, cat_names, context_names, mean_spectra_list, c
     number_of_clusters = len(context_names)
     # We use only the last three columns for the VAE
     if lime_weights_only:
-        latent_space_data = torch.tensor(lime_data)[:,:, 3:]
+        latent_space_data = lime_data[:,:, 3:]
     else:
-        latent_space_data = torch.tensor(lime_data)[:, :, 1:]
+        latent_space_data = lime_data[:, :, 1:]
     # print(latent_space_data[0])
-    weight_data = torch.tensor(lime_data)
+    weight_data = lime_data
+    print("C")
     
+    print(latent_space_data.shape)
+    reshaped_latent_space_data = torch.tensor(latent_space_data.reshape(latent_space_data.shape[0], -1))
+    print(reshaped_latent_space_data.shape)
+    print(torch.is_tensor(reshaped_latent_space_data))
     # Predict latent space
-    mu, logvar = encoder.predict(latent_space_data.reshape(latent_space_data.shape[0], -1))
-    latent_space = torch.cat((mu, logvar), dim=1).detach().cpu().numpy()
+    # Make a loader for this to then pass to the encoder
+    loader = DataLoader(TensorDataset(reshaped_latent_space_data), batch_size=20, shuffle=False)
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+    print("Made loader")
+    mu = []
+    logvar = []
+    encoder.to(device)
+    for batch in loader:
+        # print(batch)
+        batch_rlsd = batch[0]
+        batch_rlsd = batch_rlsd.to(device)
+        _, _, batch_mu, batch_logvar = encoder(batch_rlsd)
+        # print("bm", batch_mu)
+        # print("bl", batch_logvar)
+        mu = torch.cat((torch.tensor(mu).to(device), torch.tensor(batch_mu).to(device)), dim=0)
+        logvar = torch.concat((torch.tensor(logvar).to(device), torch.tensor(batch_logvar).to(device)), dim=0)
+        # print(mu)
+        # print(logvar)
+        # print(len(mu))
+        # print(len(logvar))
+    # mu, logvar = encoder.predict(reshaped_latent_space_data)
+    # print("Did predictions")
+    latent_space = torch.cat((torch.tensor(mu), torch.tensor(logvar)), dim=1).detach().cpu().numpy()
     # print((latent_space[0][0]))
     separated_arrays, separated_spectra, spectra_means, crime_labels = CRIME_fit(number_of_clusters, latent_space, weight_data, mean_spectra_list, random_state)
 

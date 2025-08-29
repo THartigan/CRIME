@@ -162,14 +162,14 @@ def sort_lime(lime_weights, mean_spectra, x_axis_values, scale_factor =1):
 #   return category_arrays
 
 
-def plot_lime_global(plot_data, mean_spectra, title, cluster_indices = None, plot_mean_spectra = True, plot_shade = True, plot_clusters = False, figsize=(19, 5), lime_scale_factor = 10):
+def plot_lime_global(plot_data, mean_spectra, title, cluster_indices = None, plot_mean_spectra = True, plot_shade = True, plot_clusters = False, figsize=(11, 2), lime_scale_factor = 10):
 
     """
     LIME explanation plotting function.
     The function is also used to plot lime explanations for crime contexts which represent the mean LIME explanation in set context.
     Toggle options extst for plotting perturbation limits (shade), highlight clusters for crime (clusters) or mean spectra for clarity (plot_mean_spectra).
 
-    Parameters:
+    Parameters:ss
     - plot_data: input LIME data from earlier function
     - mean_spectra: array of mean spectra for set lime weights 
     - title: figure title
@@ -184,7 +184,7 @@ def plot_lime_global(plot_data, mean_spectra, title, cluster_indices = None, plo
     - fig: a matplotlib figure of the LIME/crime explanation
 
     """
-
+    
 
     fig = plt.figure(figsize=figsize)
 
@@ -195,7 +195,7 @@ def plot_lime_global(plot_data, mean_spectra, title, cluster_indices = None, plo
       # Start plotting the mean spectra, using default black color initially
       last_index = 0
       current_color = 'black'
-      plt.plot(plot_data[:, 0], mean_spectra, c = current_color, label = "Mean Context Spectrum")
+      plt.plot(plot_data[:, 0], mean_spectra, c = current_color, label = "Mean Context Spectrum", linewidth=0.5)
       for i in range(1, len(plot_data[:, 0])):
           # Check if current point matches the mean spectra
           if (plot_data[i, 1] == mean_spectra[i]) or (plot_data[i, 2] == mean_spectra[i]):
@@ -205,7 +205,7 @@ def plot_lime_global(plot_data, mean_spectra, title, cluster_indices = None, plo
           
           # If color changes, plot the previous segment
           if color != current_color:
-              plt.plot(plot_data[last_index:i, 0], mean_spectra[last_index:i], c=current_color, linestyle = 'solid', linewidth = 1)
+              plt.plot(plot_data[last_index:i, 0], mean_spectra[last_index:i], c=current_color, linestyle = 'solid', linewidth = 0.5)
               last_index = i
               current_color = color
       
@@ -242,22 +242,23 @@ def plot_lime_global(plot_data, mean_spectra, title, cluster_indices = None, plo
 
 
     # plt.ylim(0, 1)
-    marker_size = 17
-    label_size = 19
+    marker_size = 10
+    label_size = 10
     plt.xticks(fontsize=marker_size)
     plt.yticks(fontsize=marker_size)
     plt.tick_params(axis='x', direction='in', width=4, labelsize=marker_size, colors='black')
     plt.tick_params(axis='y', direction='in', width=4, labelsize=marker_size, colors='black')
-    plt.grid(False)
-    plt.grid(visible=True, color='gray', linestyle='--', linewidth=0.5)
+    # plt.grid(False)
+    # plt.grid(visible=True, color='gray', linestyle='--', linewidth=0.5)
     # plt.legend(markerscale = 3, fontsize=label_size)
-    plt.title(title, color='black', fontsize=label_size)
-    plt.xlabel('Wavenumber (cm$^{-1}$)', fontsize=label_size)
-    plt.ylabel('Relative Intensity', fontsize=label_size)
+    # plt.title(title, color='black', fontsize=label_size)
+    plt.xlabel(r'Wavenumber (cm$^{-1}$)', fontsize=label_size, fontfamily="sans-serif")
+    plt.ylabel(r'Relative Intensity', fontsize=label_size, fontfamily="sans-serif")
     # axs.tick_params(axis='x', direction='in', width=4, labelsize=16, colors='black')
     # axs.tick_params(axis='y', direction='in', width=4, labelsize=16, colors='black')
     plt.tight_layout()
     # plt.show()
     # fig.savefig(f'crime{title}.pdf', dpi = 600)
+    plt.close(fig)
     return(fig)
 
